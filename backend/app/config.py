@@ -1,0 +1,12 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+
+    gemini_api_key: str
+    database_url: str
+    mlflow_tracking_uri: str
+    gemini_model: str = "gemini-2.0-flash"
+    embedding_model: str = "models/text-embedding-004"
+
+settings = Settings()
