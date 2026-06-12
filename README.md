@@ -4,7 +4,7 @@
 > Airflow ingestion, MLflow tracking, automated evaluation, FastAPI, pgvector,
 > Gemini API, and React.
 
-![CI](https://github.com/your-username/arxiv-rag/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/dingzehu/arxiv-rag/actions/workflows/ci.yml/badge.svg)
 
 ---
 
