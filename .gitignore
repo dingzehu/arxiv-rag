@@ -1,0 +1,30 @@
+# secrets — .env file
+.env
+
+# Python artifacts
+__pycache__/
+*.pyc
+.eggs/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+
+# Test/coverage output
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Tool caches
+.ruff_cache/
+mlruns/
+airflow/logs/
+
+# Noise
+.vscode/
+.idea/
+.DS_Store
+frontend/node_modules/
+frontend/dist/
