@@ -25,9 +25,9 @@ async def ingest_papers(
 
     with mlflow.start_run() as run:                # open one entry
         # STEP 1: log the input params to MLFlow
+        run_id = run.info.run_id                   # the unique ID of this run
         mlflow.log_param("query", query)           # record the setting
         mlflow.log_param("max_papers", max_papers)
-        run_id = run.info.run_id                   # the unique ID of this run
         
         start = time.time()
 
