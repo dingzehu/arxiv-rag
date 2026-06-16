@@ -66,12 +66,12 @@ async def search(
         context_passages = "\n\n".join(passages)
 
         # STEP 5: build the full prompt
-        prompt = RAG_PROMPT.format(context_passages=context_passages, question=question)
+        rag_prompt = RAG_PROMPT.format(context_passages=context_passages, question=question)
 
         # STEP 6: call Gemini to generate the answer
         response = _client.models.generate_content(
             model = settings.gemini_model,
-            contents=prompt,
+            contents=rag_prompt,
         )
         answer = response.text
 
