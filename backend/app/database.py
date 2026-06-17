@@ -17,3 +17,8 @@ async def get_db():
     # AsyncSessionLocal is the factory — call it to produce a session 
     async with AsyncSessionLocal() as session:
         yield session
+
+async def create_tables() -> None:
+    """Create all tables defined in db.py if they do not already exsit."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
