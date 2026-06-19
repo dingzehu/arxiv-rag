@@ -53,7 +53,7 @@ async def evaluate_question(
         start = time.time()
 
         # STEP 1: call search() from rag_pipeline to get actual_answer + sources
-        rag_result = await search(question=question, top_k=10, db=db)
+        rag_result = await search(question=question, top_k=settings.top_k, db=db)
 
         # STEP 2: build the judge prompt
         judge_prompt = JUDGE_PROMPT.format(
@@ -76,6 +76,11 @@ async def evaluate_question(
         mlflow.log_param("question", question)
         mlflow.log_metric("score", score)
         mlflow.log_metric("duration_ms", duration_ms)
+        mlflow.log_param("chunk_size", settings.chunk_size)
+        mlflow.log_param("chunk_overlap", settings.chunk_overlap)
+        mlflow.log_param("embedding_model", settings.embedding_model)
+        mlflow.log_param("generation_model", settings.gemini_model)
+        mlflow.log_param("top_k", settings.top_k)
 
         # STEP 6: return the dict matching EvaluateResponse
         return {
@@ -104,7 +109,6 @@ async def evaluate_batch(db: AsyncSession) -> dict:
 
     # STEP 8: loop over golden set, call evaluate_question for each item
     # append score to all_scores AND scores_by_difficulty[item["difficulty"]]
-    # hint: .setdefault(difficulty, []).append(score)
     for item in data:
         evaluate_result = await evaluate_question(
             question=item["question"],
@@ -116,7 +120,6 @@ async def evaluate_batch(db: AsyncSession) -> dict:
         scores_by_difficulty.setdefault(item["difficulty"], []).append(evaluate_score)
 
     # STEP 9: compute average_score (overall) and per-difficulty averages
-    # hint: dict comprehension over scores_by_difficulty.items()
     average_score = sum(all_scores) / len(all_scores)
     per_difficulty_avg = {k: sum(v) / len(v) for k, v in scores_by_difficulty.items()}
 
@@ -125,14 +128,6 @@ async def evaluate_batch(db: AsyncSession) -> dict:
     # STEP 10: return dict matching BatchEvaluateResponse
     # fields: total_questions, average_score, scores_by_difficulty,
     #         mlflow_experiment_id, duration_seconds
-    # hint: mlflow.get_experiment_by_name("arxiv-rag-eval").experiment_id
-
-    # class BatchEvaluateResponse(BaseModel):
-    #     total_questions: int
-    #     average_score: float
-    #     scores_by_difficulty: dict[str, float]
-    #     mlflow_experiment_id: str
-    #     duration_seconds: float
     return {
         "total_questions": len(data),
         "average_score": average_score,

@@ -9,4 +9,8 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.0-flash"
     embedding_model: str = "models/text-embedding-004"
 
+    chunk_size: int = 400
+    chunk_overlap: int = 80
+    top_k: int = 5
+
 settings = Settings()

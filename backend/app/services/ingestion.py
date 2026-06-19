@@ -10,10 +10,45 @@ from app.services.pdf_extractor import download_and_extract_text
 from app.services.chunker import chunk_text
 from app.services.embedder import embed_document
 
+from app.config import settings
+
 logger = logging.getLogger(__name__)
+
+def _check_ingestion_regression(current_count: int) -> None:
+    """Warn if today's papers_ingested is less than 50% of the 7-day average."""
+    from mlflow.tracking import MlflowClient
+    client = MlflowClient()
+    experiment = client.get_experiment_by_name("arxiv-rag-ingestion")
+    if experiment is None:
+        return    # first ever run — no history yet
+    recent_runs = client.search_runs(
+        experiment_ids=[experiment.experiment_id],
+        order_by=["start_time DESC"],
+        max_results=7,
+    )
+    if len(recent_runs) < 3:
+        return    # not enough history to compare
+
+    valid_runs = [
+        r.data.metrics["papers_ingested"]
+        for r in recent_runs
+        if "papers_ingested" in r.data.metrics
+    ]
+
+    if not valid_runs:
+        logger.warning("No valid historical runs found — cannot check regression")
+        return
+
+    avg = sum(valid_runs) / len(valid_runs)
+    if current_count < avg * 0.5:
+        logger.warning("Ingestion drop: %d papers vs 7-days avg %.1f", current_count, avg)
 
 async def ingest_paper_list(papers: list[dict], db: AsyncSession) -> dict:
     """Process a pre-fetched list of paper: download, chunk, embed, and store"""
+
+    mlflow.log_param("chunk_size", settings.chunk_size)
+    mlflow.log_param("chunk_overlap", settings.chunk_overlap)
+    mlflow.log_param("embedding_model", settings.embedding_model)
 
     papers_ingested = 0
     chunks_created = 0
@@ -69,6 +104,8 @@ async def ingest_paper_list(papers: list[dict], db: AsyncSession) -> dict:
     mlflow.log_metric("papers_ingested", papers_ingested)   # record the result
     mlflow.log_metric("chunks_created", chunks_created)
     mlflow.log_metric("papers_skipped", papers_skipped)
+
+    _check_ingestion_regression(papers_ingested)
 
     return {
         "papers_ingested": papers_ingested,
