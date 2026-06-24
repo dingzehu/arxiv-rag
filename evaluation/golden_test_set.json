@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1, 
+        "question": "What is the core purpose of the scale factor 1/sqrt(d_k) in the self-attention formula of the Transformer?",
+        "expected_answer": "The scale factor prevents the dot products from growing excessively large in magnitude at high dimensions. Without it, the softmax function could push gradients into regions with extremely small values, leading to the vanishing gradient problem during training.",
+        "paper_title": "Attention Is All You Need",
+        "difficulty": "easy"
+    },
+    {
+        "id": 2,
+        "question": "How does Multi-Head Attention structurally differ from standard Single-Head Attention regarding its parameter spaces?",
+        "expected_answer": "Multi-Head Attention linearly projects the Queries, Keys, and Values 'h' times using unique, learnable parameter matrices. This allows the model to jointly attend to information from different representation subspaces at different positions, which are then concatenated and projected again, whereas single-head attention maps them globally once.",
+        "paper_title": "Attention Is All You Need",
+        "difficulty": "medium"
+    },
+    {
+        "id": 3,
+        "question": "What are the exact hardware energy consumption metrics in Joules for running a FlashAttention-3 forward pass on an NVIDIA H100 GPU compared to an NVIDIA A100 GPU?",
+        "expected_answer": "The indexed papers do not contain enough information to answer this question.",
+        "difficulty": "negative"
+    }
+  ]
