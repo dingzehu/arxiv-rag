@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: arxiv
+          POSTGRES_PASSWORD: arxiv
+          POSTGRES_DB: arxiv
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U arxiv"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    
+    env:
+      DATABASE_URL: postgresql+asyncpg://arxiv:arxiv@localhost:5432/arxiv
+      GEMINI_API_KEY: dummy-key-for-unit-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: "${{ runner.os }}-pip-${{ hashFiles('backend/pyproject.toml') }}"
+      
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -e ".[dev,api]"
+
+      - name: Lint
+        working-directory: backend
+        run: ruff check .
+
+      - name: Test
+        working-directory: backend
+        run: |
+          pytest tests/ -v \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-fail-under=70 \
+            -m "not integration"
+
+  frontend-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+  
