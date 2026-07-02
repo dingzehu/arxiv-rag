@@ -28,6 +28,7 @@ jobs:
     env:
       DATABASE_URL: postgresql+asyncpg://arxiv:arxiv@localhost:5432/arxiv
       GEMINI_API_KEY: dummy-key-for-unit-tests
+      MLFLOW_TRACKING_URI: http://localhost:5001
 
     steps:
       - uses: actions/checkout@v4

@@ -4,6 +4,7 @@
 # Python artifacts
 __pycache__/
 *.pyc
+*.egg-info/
 .eggs/
 dist/
 build/
