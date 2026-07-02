@@ -72,7 +72,7 @@ so you can see how the system's accuracy changes over time.
 
 ```bash
 # 1. Clone and configure
-git clone https://github.com/your-username/arxiv-rag.git
+git clone https://github.com/dingzehu/arxiv-rag.git
 cd arxiv-rag
 cp .env.example .env          # then add your GEMINI_API_KEY
 
@@ -112,12 +112,6 @@ Services once running:
 
 ---
 
-## Screenshots
-
-*Coming in Phase 9 — after the full stack is running.*
-
----
-
 ## Project Structure
 
 ```
@@ -137,7 +131,7 @@ arxiv-rag/
 ```bash
 # Run backend tests (no API keys needed)
 cd backend
-pip install -e .[dev]
+pip install -e ".[dev,api]"
 pytest tests/ -m "not integration"
 
 # Lint
