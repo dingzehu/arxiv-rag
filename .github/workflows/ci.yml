@@ -56,8 +56,15 @@ jobs:
           pytest tests/ -v \
             --cov=app \
             --cov-report=term-missing \
+            --cov-report=xml \
             --cov-fail-under=70 \
             -m "not integration"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./backend/coverage.xml
 
   frontend-build:
     runs-on: ubuntu-latest
