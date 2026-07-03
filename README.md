@@ -90,30 +90,28 @@ sequenceDiagram
 ---
 
 ## Quick Start
-
-```bash
-# 1. Clone and configure
+> **Prerequisites:** Docker Desktop, a free [Gemini API key](https://aistudio.google.com/app/apikey). No other accounts required.
+```
+# 1. Clone
 git clone https://github.com/dingzehu/arxiv-rag.git
 cd arxiv-rag
-cp .env.example .env          # add your GEMINI_API_KEY
 
-# 2. Initialise Airflow (first time only)
-docker-compose run --rm airflow airflow db init
-docker-compose run --rm airflow airflow users create \
-  --username admin --password admin \
-  --firstname Admin --lastname User \
-  --role Admin --email admin@example.com
+# 2. One-time setup — generates secrets, creates .env, initialises Airflow
+#    (Docker Desktop must be running)
+chmod +x setup.sh && ./setup.sh
 
-# 3. Start all five services
+# 3. Add your GEMINI_API_KEY to .env
+#    (setup.sh will remind you — free key at https://aistudio.google.com/apikey)
+
+# 4. Start all services
 docker-compose up --build
 
-# 4. Trigger initial ingestion (fetches ~20 papers, takes ~3 minutes)
+# 5. Trigger initial ingestion (~3 minutes, fetches 20 papers)
 curl -X POST http://localhost:8000/ingest \
   -H "Content-Type: application/json" \
   -d '{"query": "transformer attention mechanism", "max_papers": 20}'
 ```
 
-> **Prerequisites:** Docker Desktop, a free [Gemini API key](https://aistudio.google.com/app/apikey). No other accounts required.
 
 | Service | URL | What you see |
 |---|---|---|
