@@ -48,6 +48,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./backend:/opt/airflow/backend
+    command: standalone
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.11.1
