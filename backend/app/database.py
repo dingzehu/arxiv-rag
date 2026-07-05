@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy import text
 from app.config import settings
 
 # to build the connection pool
@@ -21,4 +22,5 @@ async def get_db():
 async def create_tables() -> None:
     """Create all tables defined in db.py if they do not already exsit."""
     async with engine.begin() as conn:
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         await conn.run_sync(Base.metadata.create_all)
