@@ -151,7 +151,7 @@ curl -X POST http://localhost:8000/evaluate/batch
 | Database | PostgreSQL 16 + pgvector (HNSW index) |
 | ORM | SQLAlchemy 2.0 async |
 | LLM + Embeddings | Google Gemini (`gemini-2.0-flash`, `text-embedding-004`) |
-| Pipeline | Apache Airflow 2.9 |
+| Pipeline | Apache Airflow 2.10 |
 | Experiment tracking | MLflow 2.x |
 | Frontend | React 18 + Vite |
 | Containers | Docker + Docker Compose |
