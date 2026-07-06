@@ -2,7 +2,8 @@ import time
 import logging
 import mlflow
 from google import genai
-from sqlalchemy import select
+from sqlalchemy import select, cast, Float
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -11,7 +12,10 @@ from app.services.embedder import embed_query
 
 logger = logging.getLogger(__name__)
 
-_client = genai.Client(api_key=settings.gemini_api_key)
+_client = genai.Client(
+    api_key=settings.gemini_api_key,
+    http_options={"api_version": "v1"},
+)
 
 RAG_PROMPT = """You are a research assistant specialising in machine learning
 and AI. \
@@ -53,16 +57,20 @@ async def search(
         question_vector = embed_query(question)
 
         # STEP 3: query pgvector
-        distance = Chunk.embedding.op("<=>")(question_vector)
+        distance = Chunk.embedding.op("<=>", return_type=Float)(cast(question_vector, Vector(768)))
         rows = (await db.execute(
-            select(Chunk, Paper, distance.label("distance"))
+            select(Chunk.chunk_text,
+            Paper.arxiv_id,
+            Paper.title,
+            Paper.authors,
+            distance.label("distance"))
             .join(Paper, Chunk.paper_id == Paper.id)
             .order_by(distance)
             .limit(top_k)
         )).all()
 
         # STEP 4: build context string from retrieved chunks
-        passages = [f"[{i+1}] {row.Chunk.chunk_text}" for i, row in enumerate(rows)]
+        passages = [f"[{i+1}] {row.chunk_text}" for i, row in enumerate(rows)]
         context_passages = "\n\n".join(passages)
 
         # STEP 5: build the full prompt
@@ -78,8 +86,11 @@ async def search(
         #STEP 7: build sources list — one dict per row
         sources_list = []
         for row in rows:
-            sources_list.append({"arxiv_id": row.Paper.arxiv_id, "title": row.Paper.title,
-            "authors": row.Paper.authors, "chunk_text": row.Chunk.chunk_text,
+            sources_list.append({
+                "arxiv_id": row.arxiv_id,
+                "title": row.title,
+                "authors": row.authors,
+                "chunk_text": row.chunk_text,
             "similarity_score": round(1 - row.distance, 4)})
 
         # STEP 8: compute duration_ms, log metrics (top_k param, num_results +
