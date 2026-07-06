@@ -12,7 +12,10 @@ from app.services.rag_pipeline import search
 
 logger = logging.getLogger(__name__)
 
-_client = genai.Client(api_key=settings.gemini_api_key)
+_client = genai.Client(
+    api_key=settings.gemini_api_key,
+    http_options={"api_version": "v1"},
+)
 
 GOLDEN_SET_PATH = (
     Path(__file__).resolve().parents[3] / "evaluation" / "golden_test_set.json"
