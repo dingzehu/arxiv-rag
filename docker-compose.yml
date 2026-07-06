@@ -45,10 +45,20 @@ services:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: "admin"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./backend:/opt/airflow/backend
-    command: standalone
+      - airflow_db:/opt/airflow
+    command:
+      - bash
+      - -c
+      - |
+        airflow scheduler &
+        exec airflow webserver
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.11.1
@@ -78,3 +88,4 @@ services:
 volumes:
   postgres_data:
   mlflow_data:
+  airflow_db:

@@ -123,46 +123,6 @@ docker-compose build airflow
 echo "✓ Airflow image built"
 echo ""
 
-# ── Step 5: Initialise the Airflow metadata database ──────────────────────────
-# Airflow stores its own state — DAG run history, task status, logs, schedules,
-# variables, connections — in a metadata database separate from your application
-# database. With SequentialExecutor, this is a SQLite file at
-# /opt/airflow/airflow.db inside the container.
-#
-# "airflow db init" creates the SQLite file and runs Alembic migrations to
-# build all the required tables. This only needs to run once. If you re-run it,
-# it is a no-op — it will not destroy existing data.
-#
-# We use docker-compose run --rm (not docker-compose exec) because the airflow
-# service is not running yet — we are preparing it before starting the full stack.
-
-echo "Initialising Airflow metadata database..."
-docker-compose run --rm airflow airflow db init
-echo "✓ Airflow database initialised"
-echo ""
-
-# ── Step 6: Create the Airflow admin user ─────────────────────────────────────
-# Airflow's web UI requires authentication. This creates a local admin account
-# for development use. The admin/admin credentials are acceptable for a local
-# development environment where the service is not exposed to the public internet.
-#
-# In a production deployment, you would:
-#   - Use environment variables for credentials (never hardcode them)
-#   - Enable RBAC and restrict admin access
-#   - Use an external authentication provider (LDAP, OAuth)
-# These patterns are out of scope for a local portfolio project.
-
-echo "Creating Airflow admin user..."
-docker-compose run --rm airflow airflow users create \
-    --username admin \
-    --password admin \
-    --firstname Admin \
-    --lastname User \
-    --role Admin \
-    --email admin@example.com
-echo "✓ Airflow admin user created"
-echo ""
-
 # ── Final instructions ────────────────────────────────────────────────────────
 # All automated setup is complete. Surface the one remaining manual step
 # clearly rather than silently skipping it — nothing is more frustrating than
