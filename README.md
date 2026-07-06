@@ -14,7 +14,7 @@
 
 You type a question like *"How does self-attention work?"* and the system searches a corpus of arXiv machine learning research papers it has ingested and indexed. It finds the most semantically relevant passages, then uses Google's Gemini AI to write you a focused answer — with citations back to the exact papers and passages it used.
 
-Behind the scenes, a scheduled Airflow pipeline runs every night to fetch new ML papers from arXiv, extract their text, split it into overlapping chunks, convert each chunk into a 768-dimensional embedding, and store everything in PostgreSQL with pgvector for meaning-based similarity search. Every search query and every nightly ingestion run is tracked in MLflow so accuracy changes are measurable as the corpus grows.
+Behind the scenes, a scheduled Airflow pipeline runs every night and calls the FastAPI backend to fetch new ML papers from arXiv, extract their text, split it into overlapping chunks, convert each chunk into a 768-dimensional embedding, and store everything in PostgreSQL with pgvector for meaning-based similarity search. Every search query and every nightly ingestion run is tracked in MLflow so accuracy changes are measurable as the corpus grows.
 
 ---
 
@@ -29,20 +29,19 @@ flowchart TB
         FastAPI["⚡ FastAPI\n:8000"]
         PG[("🗄️ PostgreSQL\n+ pgvector\n:5432")]
         MLflow["📊 MLflow\n:5001"]
-        Airflow["🔄 Airflow\n:8080\nnightly DAG"]
+        Airflow["🔄 Airflow\n:8080\nightly DAG"]
     end
 
     Gemini(["✨ Gemini API\n(Google)"])
     arXiv(["📄 arXiv API\n(public)"])
 
     Browser --> React
-    React <-->|"REST /search /ingest"| FastAPI
+    React <-->|"REST /search"| FastAPI
     FastAPI --> PG
     FastAPI --> MLflow
     FastAPI <-->|"embed + generate"| Gemini
-    Airflow -->|"store chunks + vectors"| PG
-    Airflow --> arXiv
-    Airflow <-->|"embed chunks"| Gemini
+    FastAPI -->|"fetch papers"| arXiv
+    Airflow -->|"POST /ingest /evaluate/batch"| FastAPI
 ```
 
 ### Ingestion flow — Airflow DAG, runs nightly
@@ -54,16 +53,18 @@ sequenceDiagram
     participant G as Gemini API
     participant P as PostgreSQL + pgvector
     participant M as MLflow
+    participant F as FastAPI
 
-    A->>X: fetch new ML papers by topic
-    X-->>A: paper metadata + PDF URLs
-    A->>A: download PDFs, extract text (pdfplumber)
-    A->>A: chunk text (400 words, 80-word overlap)
-    A->>G: embed each chunk (gemini-embedding-001, RETRIEVAL_DOCUMENT)
-    G-->>A: 768-float vectors
-    A->>P: store chunk text + vectors
-    A->>M: log ingestion metrics to MLflow
-    A->>A: run golden test set evaluation
+    A->>F: POST /ingest
+    F->>X: fetch new ML papers by topic
+    X-->>F: paper metadata + PDF URLs
+    F->>F: download PDFs, extract text (pdfplumber)
+    F->>F: chunk text (400 words, 80-word overlap)
+    F->>G: embed each chunk (gemini-embedding-001, RETRIEVAL_DOCUMENT)
+    G-->>F: 768-float vectors
+    F->>P: store chunk text + vectors
+    F->>M: log ingestion metrics
+    A->>F: POST /evaluate/batch
 ```
 
 ### Query flow — every user search
@@ -92,7 +93,7 @@ sequenceDiagram
 
 ## Quick Start
 > **Prerequisites:** Docker Desktop, a free [Gemini API key](https://aistudio.google.com/app/apikey). No other accounts required.
-```
+```bash
 # 1. Clone
 git clone https://github.com/dingzehu/arxiv-rag.git
 cd arxiv-rag
@@ -165,9 +166,9 @@ curl -X POST http://localhost:8000/evaluate/batch
 
 - **pgvector over Pinecone or Chroma** — keeps the entire stack inside one `docker-compose up`, zero external API dependency for vector search; HNSW index delivers fast approximate nearest-neighbour search.
 - **Airflow over a cron job** — each pipeline stage (ingest, evaluate) is an independent task with its own retry policy, logs, and success/failure state visible in the Airflow UI; a cron job hides failures silently.
-- **MLflow experiment tracking** — every pipeline change is measured against the same 30-question golden test set, so improvements are data-driven rather than assumed. Ingestion config params (chunk size, embedding model) are logged alongside evaluation scores so the two experiments can be directly joined.
-- **SequentialExecutor + SQLite for Airflow** — appropriate for a linearly-sequential DAG with no parallel tasks; avoids the Redis and Celery worker overhead that a `LocalExecutor` or `CeleryExecutor` would require, without sacrificing any practical performance gains.
-- **Gemini-as-judge evaluation** — LLM-based scoring over a fixed golden set with four difficulty levels (including negative/hallucination-detection cases) gives a reproducible quality signal without human annotation overhead.
+- **MLflow experiment tracking** — every pipeline change is measured against the same 30-question golden test set, so improvements are data-driven rather than assumed. Ingestion config params (chunk size, embedding model) are logged alongside evaluation scores so you can directly correlate configuration changes with quality score changes in MLflow.
+- **SequentialExecutor + SQLite for Airflow** — appropriate for a linearly-sequential DAG with no parallel tasks; avoids the process-management overhead of `LocalExecutor` and the Redis + Celery broker overhead of `CeleryExecutor`, for zero practical gain on a single-node sequential pipeline.
+- **Gemini-as-judge evaluation** — LLM-based scoring over a fixed golden set with four difficulty levels (including questions whose answers are deliberately absent from the corpus) gives a reproducible quality signal without human annotation overhead.
 
 ---
 
