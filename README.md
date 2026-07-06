@@ -53,15 +53,16 @@ sequenceDiagram
     participant X as arXiv API
     participant G as Gemini API
     participant P as PostgreSQL + pgvector
+    participant M as MLflow
 
     A->>X: fetch new ML papers by topic
     X-->>A: paper metadata + PDF URLs
     A->>A: download PDFs, extract text (pdfplumber)
     A->>A: chunk text (400 words, 80-word overlap)
-    A->>G: embed each chunk (text-embedding-004, RETRIEVAL_DOCUMENT)
+    A->>G: embed each chunk (gemini-embedding-001, RETRIEVAL_DOCUMENT)
     G-->>A: 768-float vectors
     A->>P: store chunk text + vectors
-    A->>P: log ingestion metrics to MLflow
+    A->>M: log ingestion metrics to MLflow
     A->>A: run golden test set evaluation
 ```
 
@@ -77,7 +78,7 @@ sequenceDiagram
 
     U->>R: type a question
     R->>F: POST /search {"question": "...", "top_k": 5}
-    F->>G: embed question (text-embedding-004, RETRIEVAL_QUERY)
+    F->>G: embed question (gemini-embedding-001, RETRIEVAL_QUERY)
     G-->>F: 768-float query vector
     F->>P: cosine similarity search (HNSW index)
     P-->>F: top-5 most relevant chunks + similarity scores
@@ -96,7 +97,7 @@ sequenceDiagram
 git clone https://github.com/dingzehu/arxiv-rag.git
 cd arxiv-rag
 
-# 2. One-time setup — generates secrets, creates .env, initialises Airflow
+# 2. One-time setup — generates secrets, creates .env, builds Airflow image
 #    (Docker Desktop must be running)
 chmod +x setup.sh && ./setup.sh
 
@@ -150,7 +151,7 @@ curl -X POST http://localhost:8000/evaluate/batch
 | API | FastAPI + Uvicorn |
 | Database | PostgreSQL 16 + pgvector (HNSW index) |
 | ORM | SQLAlchemy 2.0 async |
-| LLM + Embeddings | Google Gemini (`gemini-2.0-flash`, `text-embedding-004`) |
+| LLM + Embeddings | Google Gemini (`gemini-2.0-flash`, `gemini-embedding-001`) |
 | Pipeline | Apache Airflow 2.10 |
 | Experiment tracking | MLflow 2.x |
 | Frontend | React 18 + Vite |
@@ -162,7 +163,7 @@ curl -X POST http://localhost:8000/evaluate/batch
 ## Design Decisions
 
 - **pgvector over Pinecone or Chroma** — keeps the entire stack inside one `docker-compose up`, zero external API dependency for vector search; HNSW index delivers fast approximate nearest-neighbour search.
-- **Airflow over a cron job** — each pipeline stage (fetch, ingest, evaluate) is an independent task with its own retry policy, logs, and success/failure state visible in the Airflow UI; a cron job hides failures silently.
+- **Airflow over a cron job** — each pipeline stage (ingest, evaluate) is an independent task with its own retry policy, logs, and success/failure state visible in the Airflow UI; a cron job hides failures silently.
 - **MLflow experiment tracking** — every pipeline change is measured against the same 30-question golden test set, so improvements are data-driven rather than assumed. Ingestion config params (chunk size, embedding model) are logged alongside evaluation scores so the two experiments can be directly joined.
 - **SequentialExecutor + SQLite for Airflow** — correct choice for a linearly-sequential DAG with no parallel tasks; avoids the Redis + Celery worker overhead LocalExecutor or CeleryExecutor would require for zero practical gain.
 - **Gemini-as-judge evaluation** — LLM-based scoring over a fixed golden set with four difficulty levels (including negative/hallucination-detection cases) gives a reproducible quality signal without human annotation overhead.
@@ -194,7 +195,6 @@ arxiv-rag/
 ## Development
 
 ```bash
-# Backend tests — no API keys needed, all external calls mocked
 cd backend
 pip install -e ".[dev,api]"
 
