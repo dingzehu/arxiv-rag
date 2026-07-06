@@ -10,10 +10,10 @@ async def test_search_returns_answer(mock_db):
                 mock_mlflow.start_run.return_value.__enter__.return_value = mock_run
                 
                 mock_row = MagicMock()
-                mock_row.Chunk.chunk_text = "some chunk test"
-                mock_row.Paper.arxiv_id = "1234.5678"
-                mock_row.Paper.title = "Test Paper"
-                mock_row.Paper.authors = "Author A"
+                mock_row.chunk_text = "some chunk test"
+                mock_row.arxiv_id = "1234.5678"
+                mock_row.title = "Test Paper"
+                mock_row.authors = "Author A"
                 mock_row.distance = 0.2
                 execute_result = MagicMock()
                 execute_result.all.return_value = [mock_row]
