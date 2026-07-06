@@ -36,7 +36,7 @@ flowchart TB
     arXiv(["📄 arXiv API\n(public)"])
 
     Browser --> React
-    React <-->|"REST /api/*"| FastAPI
+    React <-->|"REST /search /ingest"| FastAPI
     FastAPI --> PG
     FastAPI --> MLflow
     FastAPI <-->|"embed + generate"| Gemini
@@ -105,12 +105,13 @@ chmod +x setup.sh && ./setup.sh
 #    (setup.sh will remind you — free key at https://aistudio.google.com/apikey)
 
 # 4. Start all services
+# (use 'docker-compose up' on subsequent runs)
 docker-compose up --build
 
-# 5. Trigger initial ingestion (~3 minutes, fetches 20 papers)
+# 5. Trigger initial ingestion (free-tier Gemini: keep max_papers ≤ 5 per call)
 curl -X POST http://localhost:8000/ingest \
   -H "Content-Type: application/json" \
-  -d '{"query": "transformer attention mechanism", "max_papers": 20}'
+  -d '{"query": "transformer attention mechanism", "max_papers": 5}'
 ```
 
 
@@ -120,17 +121,17 @@ curl -X POST http://localhost:8000/ingest \
 | FastAPI docs | http://localhost:8000/docs | Interactive API (Swagger UI) |
 | Airflow UI | http://localhost:8080 | DAG graph, task logs, run history |
 | MLflow UI | http://localhost:5001 | Ingestion metrics, evaluation scores |
-| PostgreSQL | localhost:5432 | No browser UI — database only |
+| PostgreSQL | localhost:5432 | `psql` or any DB client — database only |
 
 ---
 
 ## Evaluation
 
-The pipeline includes a 30-question golden test set spanning four difficulty levels — including **negative questions that test hallucination resistance** (questions whose answers are deliberately absent from the corpus). The system must respond with "The indexed papers do not contain enough information to answer this question." rather than generating a plausible-sounding but false answer.
+The pipeline includes a 30-question golden test set spanning four difficulty levels — including questions whose answers are deliberately absent from the corpus — to test hallucination resistance. The system must respond with "The indexed papers do not contain enough information to answer this question." rather than generating a plausible-sounding but false answer.
 
 Evaluation runs automatically after every nightly Airflow ingestion. All scores are logged to the `arxiv-rag-evaluation` MLflow experiment, making every pipeline change (chunk size, embedding model, top-k) directly measurable against a consistent baseline.
 
-Step 1 — One-time setup: generate the golden test set (run once after initial ingestion, then never again):
+Step 1 — One-time setup: generate the golden test set:
 ```bash
 python evaluation/generate_golden_set.py
 ```
@@ -165,7 +166,7 @@ curl -X POST http://localhost:8000/evaluate/batch
 - **pgvector over Pinecone or Chroma** — keeps the entire stack inside one `docker-compose up`, zero external API dependency for vector search; HNSW index delivers fast approximate nearest-neighbour search.
 - **Airflow over a cron job** — each pipeline stage (ingest, evaluate) is an independent task with its own retry policy, logs, and success/failure state visible in the Airflow UI; a cron job hides failures silently.
 - **MLflow experiment tracking** — every pipeline change is measured against the same 30-question golden test set, so improvements are data-driven rather than assumed. Ingestion config params (chunk size, embedding model) are logged alongside evaluation scores so the two experiments can be directly joined.
-- **SequentialExecutor + SQLite for Airflow** — correct choice for a linearly-sequential DAG with no parallel tasks; avoids the Redis + Celery worker overhead LocalExecutor or CeleryExecutor would require for zero practical gain.
+- **SequentialExecutor + SQLite for Airflow** — appropriate for a linearly-sequential DAG with no parallel tasks; avoids the Redis and Celery worker overhead that a `LocalExecutor` or `CeleryExecutor` would require, without sacrificing any practical performance gains.
 - **Gemini-as-judge evaluation** — LLM-based scoring over a fixed golden set with four difficulty levels (including negative/hallucination-detection cases) gives a reproducible quality signal without human annotation overhead.
 
 ---
@@ -181,7 +182,7 @@ arxiv-rag/
 │   │   └── services/     # pdf_extractor, chunker, embedder, rag_pipeline, evaluator
 │   └── tests/            # pytest unit tests — all external calls mocked
 ├── airflow/
-│   └── dags/             # arxiv_ingestion_dag.py — daily scheduled pipeline
+│   └── dags/             # arxiv_pipeline_dag.py — daily scheduled pipeline
 ├── evaluation/
 │   ├── golden_test_set.json   # 30 curated Q&A pairs (committed, never changes)
 │   └── generate_golden_set.py # one-time script to generate the test set
