@@ -29,7 +29,7 @@ flowchart TB
         FastAPI["⚡ FastAPI\n:8000"]
         PG[("🗄️ PostgreSQL\n+ pgvector\n:5432")]
         MLflow["📊 MLflow\n:5001"]
-        Airflow["🔄 Airflow\n:8080\nightly DAG"]
+        Airflow["🔄 Airflow\n:8080\nnightly DAG"]
     end
 
     Gemini(["✨ Gemini API\n(Google)"])
