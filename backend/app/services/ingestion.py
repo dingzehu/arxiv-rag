@@ -82,6 +82,7 @@ async def ingest_paper_list(papers: list[dict], db: AsyncSession) -> dict:
             text = await download_and_extract_text(paper.pdf_url)
 
             # STEP 6: chunk → embed → stage each Chunk object
+            paper_chunks = 0  # local counter — only added to total after commit
             for i, chunk in enumerate(chunk_text(text)):
                 embedded_chunk = embed_document(chunk)
 
@@ -91,11 +92,13 @@ async def ingest_paper_list(papers: list[dict], db: AsyncSession) -> dict:
                     chunk_text=chunk,
                     embedding=embedded_chunk
                 ))
-                chunks_created += 1
+                paper_chunks += 1
 
-            # STEP 7: commit everything for this paper, increment counters
+            # STEP 7: commit everything for this paper, then update totals
+            # paper_chunks is only added here so a rollback doesn't inflate the count
             await db.commit()
             papers_ingested += 1
+            chunks_created += paper_chunks
         except Exception as e:
             await db.rollback()
             logger.warning("Failed to ingest %s: %s", paper_data["arxiv_id"], e)
