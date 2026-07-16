@@ -22,6 +22,23 @@ async def test_search_route_validates_empty_question(client):
 
     assert response.status_code == 422
 
+async def test_ingest_route_returns_counts(client):
+    with patch("app.api.routes.ingest_papers", new_callable=AsyncMock) as mock_ingest:
+        mock_ingest.return_value = {
+            "papers_ingested": 3,
+            "chunks_created": 45,
+            "papers_skipped": 2,
+            "duration_seconds": 10.0,
+            "mlflow_run_id": "ingest-run-id",
+        }
+        response = await client.post(
+            "/ingest", json={"query": "transformers", "max_papers": 5}
+        )
+        assert response.status_code == 200
+        assert response.json()["papers_ingested"] == 3
+        assert response.json()["chunks_created"] == 45
+
+
 async def test_health_route_return_ok(client, mock_db):
     execute_result = MagicMock()
     execute_result.scalar.return_value = 0
