@@ -8,7 +8,9 @@ async def test_fetch_papers_returns_paper_list():
     mock_result = MagicMock()
     mock_result.entry_id = "https://arxiv.org/abs/2301.07041v2"
     mock_result.title = "Attention Is All You Need"
-    mock_result.authors = "Vaswani, Shazeer"
+    mock_author = MagicMock()
+    mock_author.name = "Vaswani"
+    mock_result.authors = [mock_author]
     mock_result.summary = "We propose a new architecture."
     mock_result.pdf_url = "https://arxiv.org/pdf/2301.07041"
     mock_result.published = datetime(2023, 1, 1)
@@ -23,7 +25,7 @@ async def test_fetch_papers_returns_paper_list():
     assert len(papers) == 1
     assert papers[0]["arxiv_id"] == "2301.07041"
     assert papers[0]["title"] == "Attention Is All You Need"
-    assert papers[0]["authors"] == "Vaswani, Shazeer"
+    assert papers[0]["authors"] == "Vaswani"
 
 
 async def test_fetch_papers_strips_version_suffix_from_arxiv_id():

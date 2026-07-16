@@ -16,7 +16,7 @@ async def fetch_papers(query: str, max_results: int = 20) -> list[dict[str, Any]
         for result in client.results(search):
             paper = {"arxiv_id": result.entry_id.split("/")[-1].split("v")[0],
                     "title": result.title,
-                    "authors": ", ".join(str(a) for a in result.authors),
+                    "authors": ", ".join(a.name for a in result.authors),
                     "abstract": result.summary, "pdf_url": result.pdf_url,
                     "published_date": result.published}
 
