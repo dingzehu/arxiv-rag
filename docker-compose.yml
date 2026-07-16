@@ -32,8 +32,8 @@ services:
 
   airflow:
     build:
-      context: .
-      dockerfile: airflow/Dockerfile.airflow
+      context: ./airflow
+      dockerfile: Dockerfile.airflow
     ports:
       - "8080:8080"
     depends_on:
