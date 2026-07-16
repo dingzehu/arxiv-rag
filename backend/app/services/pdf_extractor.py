@@ -26,3 +26,16 @@ async def download_and_extract_text(pdf_url: str) -> str:
             logger.info("Extracted text from %d pages: %s", len(pdf.pages), pdf_url)
         return "\n".join(pages_text).strip()
     return await asyncio.to_thread(_extract)
+
+async def extract_text_from_bytes(pdf_bytes: bytes) -> str:
+    """Extract plain text from PDF bytes already in memory (no download)"""
+    def _extract():
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            pages_text = []
+            for page in pdf.pages:
+                text = page.extract_text()  # return None for image-only pages
+                if text:
+                    pages_text.append(text)
+        return "\n".join(pages_text).strip()
+    return await asyncio.to_thread(_extract)  # pdfplumber is sync — run off the event loop
+

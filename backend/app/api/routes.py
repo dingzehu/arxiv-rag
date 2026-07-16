@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,7 @@ from app.models.schemas import (
     EvaluateRequest, EvaluateResponse,
     BatchEvaluateResponse
 )
-from app.services.ingestion import ingest_papers
+from app.services.ingestion import ingest_papers, ingest_document_bytes
 from app.services.rag_pipeline import search
 from app.services.evaluator import evaluate_question, evaluate_batch
 
@@ -22,6 +22,22 @@ async def ingest_route(
     ) -> IngestResponse:
     """Trigger arXiv ingestion for the given query; returns counts and MLflow run ID."""
     result = await ingest_papers(query=body.query, max_papers=body.max_papers, db=db)
+    return IngestResponse(**result)
+
+@router.post("/ingest/document", response_model=IngestResponse)
+async def ingest_document_route(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    ) -> IngestResponse:
+    """Accept a PDF upload and index it into pgvector — no arXiv fetch."""
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=422, detail="Upload file must be a PDF.")
+    pdf_bytes = await file.read()
+    result = await ingest_document_bytes(
+        pdf_bytes=pdf_bytes,
+        filename=file.filename or "unknown.pdf",
+        db=db,
+    )
     return IngestResponse(**result)
 
 @router.post("/search", response_model=SearchResponse)

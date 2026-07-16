@@ -1,16 +1,19 @@
 import time
 import logging
+from uuid import uuid4
+
 import mlflow
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.db import Paper, Chunk
 from app.services.arxiv_fetcher import fetch_papers
-from app.services.pdf_extractor import download_and_extract_text
+from app.services.pdf_extractor import download_and_extract_text, extract_text_from_bytes
 from app.services.chunker import chunk_text
 from app.services.embedder import embed_document
 
 from app.config import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -153,3 +156,55 @@ async def ingest_papers(
             "mlflow_run_id": run_id,
         }
 
+
+async def ingest_document_bytes(
+    pdf_bytes: bytes,
+    filename: str,
+    db: AsyncSession,
+) -> dict:
+    """Chunk, embed and index a locally-uploaded PDF into pgvector."""
+    mlflow.set_experiment("arxiv-rag-ingestion")
+
+    with mlflow.start_run() as run:
+        run_id = run.info.run_id
+        mlflow.log_param("filename", filename)
+        mlflow.log_param("source", "direct_upload")
+        start = time.time()
+
+        text = await extract_text_from_bytes(pdf_bytes)
+
+        # Paper.arxiv_id and Paper.pdf_url are NOT NULL in the schema —
+        # use placeholders so the constraint is satisfied for uploaded files
+        paper = Paper(
+            arxiv_id=f"upload-{uuid4().hex[:8]}",
+            title=filename.removesuffix(".pdf"),
+            authors="uploaded",
+            abstract=None,
+            pdf_url=f"local://{filename}",
+            published_date=None,
+        )
+        db.add(paper)
+        await db.flush()   # writes paper to DB and gives us paper.id without committing
+
+        chunks_created = 0
+        for i, chunk in enumerate(chunk_text(text)):
+            db.add(Chunk(
+                paper_id=paper.id,
+                chunk_index=i,
+                chunk_text=chunk,
+                embedding=embed_document(chunk),
+            ))
+            chunks_created += 1
+
+        await db.commit()
+
+        duration = time.time() - start
+        mlflow.log_metric("chunks_created", chunks_created)
+        mlflow.log_metric("duration_seconds", round(duration, 2))
+
+        return {
+            "papers_ingested": 1,
+            "chunks_created": chunks_created,
+            "duration_seconds": round(duration, 2),
+            "mlflow_run_id": run_id,
+        }
