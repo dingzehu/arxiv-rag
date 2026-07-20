@@ -1,8 +1,6 @@
-import time
 from unittest.mock import MagicMock, AsyncMock, patch
 
 from app.services.ingestion import ingest_paper_list
-from app.services.pdf_extractor import download_and_extract_text
 
 async def test_ingest_paper_list_ingests_new_paper():
     db = AsyncMock()
@@ -87,11 +85,11 @@ async def test_ingest_paper_list_handles_download_failure():
     db.add = MagicMock()
 
     
-    with patch("app.services.ingestion.download_and_extract_text",
-        new_callable=AsyncMock) as mock_download:
-        mock_download.side_effect = Exception("network timeout")
-        with patch("app.services.ingestion.mlflow") as mock_mlflow:
-            with patch("app.services.ingestion._check_ingestion_regression"):
+    with patch("app.services.ingestion.mlflow"):
+        with patch("app.services.ingestion._check_ingestion_regression"):
+            with patch("app.services.ingestion.download_and_extract_text",
+                new_callable=AsyncMock) as mock_download:
+                mock_download.side_effect = Exception("network timeout")
 
                 result = await ingest_paper_list(papers=[
                     {
@@ -106,9 +104,9 @@ async def test_ingest_paper_list_handles_download_failure():
 
                 db.rollback.assert_called_once()
 
-            assert result["papers_ingested"] == 0
-            assert result["chunks_created"] == 0
-            assert result["papers_skipped"] == 0
+                assert result["papers_ingested"] == 0
+                assert result["chunks_created"] == 0
+                assert result["papers_skipped"] == 0
 
 
         
