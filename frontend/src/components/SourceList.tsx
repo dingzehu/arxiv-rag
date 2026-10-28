@@ -1,4 +1,10 @@
-function SourceList({ sources }) {
+import type { Source } from "../types.ts";
+
+interface SourceListProps {
+    sources: Source[];
+}
+
+function SourceList({ sources }: SourceListProps) {
     if (!sources || sources.length === 0) return null;
 
     return (

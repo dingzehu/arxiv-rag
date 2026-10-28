@@ -1,4 +1,8 @@
-function AnswerCard({ answer }) {
+interface AnswerCardProps {
+    answer: string;
+}
+
+function AnswerCard({ answer }: AnswerCardProps) {
     if (!answer) return null;
 
     return (

@@ -1,15 +1,20 @@
 import { useState } from "react";
 
-function SearchBar({ onSearch, loading }) {
-    const [question, setQuestion] = useState("");
+interface SearchBarProps {
+    onSearch: (question: string) => void;
+    loading: boolean;
+}
 
-    function handleClick() {
+function SearchBar({ onSearch, loading }: SearchBarProps) {
+    const [question, setQuestion] = useState<string>("");
+
+    function handleClick(): void {
         if (question.trim()) {
             onSearch(question.trim());
         }
     }
 
-    function handleKeyDown(e) {
+    function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
         if (e.key === "Enter") {
             handleClick();
         }
