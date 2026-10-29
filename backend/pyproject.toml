@@ -34,5 +34,11 @@ dev = [
 target-version = "py312"
 line-length = 88
 
+[tool.ruff.lint]
+extend-ignore = [
+    "B008",   # FastAPI uses Depends/File in argument defaults by design
+    "BLE001", # broad Exception catch is acceptable at ingestion boundary
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

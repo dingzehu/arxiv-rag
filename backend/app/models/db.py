@@ -1,8 +1,11 @@
-from sqlalchemy import Index, DateTime, func, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime, date
+from datetime import date, datetime
+
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import DateTime, ForeignKey, Index, func
+from sqlalchemy.orm import Mapped, mapped_column
+
 from app.database import Base
+
 
 class Paper(Base):
     __tablename__ = "papers"

@@ -1,6 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.services.pdf_extractor import download_and_extract_text, extract_text_from_bytes
+from app.services.pdf_extractor import (
+    download_and_extract_text,
+    extract_text_from_bytes,
+)
 
 
 async def test_download_and_extract_text_returns_page_text():
@@ -21,9 +24,11 @@ async def test_download_and_extract_text_returns_page_text():
     mock_http.__aenter__ = AsyncMock(return_value=mock_http)
     mock_http.__aexit__ = AsyncMock(return_value=False)
 
-    with patch("app.services.pdf_extractor.httpx.AsyncClient", return_value=mock_http):
-        with patch("app.services.pdf_extractor.pdfplumber.open", return_value=mock_pdf):
-            result = await download_and_extract_text("https://example.com/paper.pdf")
+    with (
+        patch("app.services.pdf_extractor.httpx.AsyncClient", return_value=mock_http),
+        patch("app.services.pdf_extractor.pdfplumber.open", return_value=mock_pdf),
+    ):
+        result = await download_and_extract_text("https://example.com/paper.pdf")
 
     assert result == "Sample text from page"
 

@@ -1,5 +1,6 @@
 from app.services.chunker import chunk_text
 
+
 def test_chunk_text_yields_chunks_for_long_text():
     result = list(chunk_text("word " * 500))
     assert len(result) > 0

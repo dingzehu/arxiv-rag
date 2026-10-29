@@ -1,19 +1,20 @@
-import time
 import logging
+import time
 from uuid import uuid4
 
 import mlflow
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.db import Paper, Chunk
+from app.config import settings
+from app.models.db import Chunk, Paper
 from app.services.arxiv_fetcher import fetch_papers
-from app.services.pdf_extractor import download_and_extract_text, extract_text_from_bytes
 from app.services.chunker import chunk_text
 from app.services.embedder import embed_document
-
-from app.config import settings
-
+from app.services.pdf_extractor import (
+    download_and_extract_text,
+    extract_text_from_bytes,
+)
 
 logger = logging.getLogger(__name__)
 

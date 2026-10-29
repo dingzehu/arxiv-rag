@@ -1,7 +1,8 @@
-import arxiv
 import asyncio
 import logging
 from typing import Any
+
+import arxiv
 
 logger = logging.getLogger(__name__)
 

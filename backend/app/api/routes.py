@@ -1,18 +1,21 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.db import Paper, Chunk
+from app.models.db import Chunk, Paper
 from app.models.schemas import (
-    IngestRequest, IngestResponse,
-    SearchRequest, SearchResponse,
-    EvaluateRequest, EvaluateResponse,
-    BatchEvaluateResponse
+    BatchEvaluateResponse,
+    EvaluateRequest,
+    EvaluateResponse,
+    IngestRequest,
+    IngestResponse,
+    SearchRequest,
+    SearchResponse,
 )
-from app.services.ingestion import ingest_papers, ingest_document_bytes
+from app.services.evaluator import evaluate_batch, evaluate_question
+from app.services.ingestion import ingest_document_bytes, ingest_papers
 from app.services.rag_pipeline import search
-from app.services.evaluator import evaluate_question, evaluate_batch
 
 router = APIRouter()
 

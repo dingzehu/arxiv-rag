@@ -1,4 +1,5 @@
 from collections.abc import Generator
+
 from app.config import settings
 
 MIN_CHUNK_WORDS = 50

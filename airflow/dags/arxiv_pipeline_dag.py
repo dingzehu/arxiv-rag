@@ -1,9 +1,12 @@
-import logging, requests
-
-from airflow import DAG
-from airflow.operators.python import PythonOperator
+import logging
 from datetime import datetime, timedelta
 
+import requests
+from airflow.operators.python import PythonOperator
+
+from airflow import DAG
+
+logger = logging.getLogger(__name__)
 
 BACKEND_URL = "http://backend:8000"
 
@@ -19,7 +22,7 @@ def ingest(**context):
             )
         response.raise_for_status()
         result = response.json()
-        logging.info("query=%r ingested=%s skipped=%s",
+        logger.info("query=%r ingested=%s skipped=%s",
                     query, result.get("papers_ingested"),
                     result.get("papers_skipped"))
 
@@ -29,7 +32,7 @@ def evaluate(**context):
     result = response.json()
 
     if result["average_score"] < 0.70:
-        logging.warning("Evaluation score below threshold: %s",
+        logger.warning("Evaluation score below threshold: %s",
         result["average_score"]
         )
 

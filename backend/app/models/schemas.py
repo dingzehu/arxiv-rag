@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_validator
 
+
 class IngestRequest(BaseModel):
     query: str
     max_papers: int = 20

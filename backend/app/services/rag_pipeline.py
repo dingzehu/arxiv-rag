@@ -1,13 +1,14 @@
-import time
 import logging
+import time
+
 import mlflow
 from google import genai
-from sqlalchemy import select, cast, Float
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import Float, cast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models.db import Paper, Chunk
+from app.models.db import Chunk, Paper
 from app.services.embedder import embed_query
 
 logger = logging.getLogger(__name__)

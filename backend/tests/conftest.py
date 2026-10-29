@@ -1,8 +1,11 @@
-import pytest
 from unittest.mock import AsyncMock, patch
-from httpx import AsyncClient, ASGITransport
-from app.main import app
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+
 from app.database import get_db
+from app.main import app
+
 
 def pytest_configure(config):
     config.addinivalue_line(

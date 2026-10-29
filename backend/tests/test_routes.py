@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 
 async def test_search_route_returns_answer(client):
     with patch("app.api.routes.search", new_callable=AsyncMock) as mock_search:

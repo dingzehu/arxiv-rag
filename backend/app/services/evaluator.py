@@ -1,6 +1,6 @@
 import json
-import time
 import logging
+import time
 from pathlib import Path
 
 import mlflow
@@ -102,9 +102,9 @@ async def evaluate_batch(db: AsyncSession) -> dict:
     
     Returns a dict matching BatchEvaluateResponse schema.
     """
-    # STEP 7: load the golden test set from GOLDEN_SET_PATH (open + json.load)
-    with open(GOLDEN_SET_PATH) as f:
-        data = json.load(f)
+    # STEP 7: load the golden test set from GOLDEN_SET_PATH
+    # json.loads on pre-read bytes keeps the blocking I/O out of the async hot path
+    data = json.loads(Path(GOLDEN_SET_PATH).read_bytes())
 
     start = time.time()
     scores_by_difficulty: dict[str, list[float]] = {}

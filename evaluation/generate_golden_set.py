@@ -1,14 +1,14 @@
 import asyncio
 import json
-from pathlib import Path
 import sys
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
-from google import genai
+from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 from app.config import settings
-from sqlalchemy import select, func
 from app.database import AsyncSessionLocal
 from app.models.db import Chunk, Paper
+from google import genai
+from sqlalchemy import func, select
 
 TEST_TOPICS = [
     "transformer architecture",

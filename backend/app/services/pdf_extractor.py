@@ -1,7 +1,8 @@
-import httpx
-import io
 import asyncio
+import io
 import logging
+
+import httpx
 import pdfplumber
 
 logger = logging.getLogger(__name__)
